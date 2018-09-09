@@ -32,7 +32,7 @@ def get_optimum_cpe_utility(ki, pi, ni, P):
 	ni = number of UEs attached
 	P = price offered to CPEi by CBS
 	"""
-	return (ni*ki*(1-P/pi))
+	return (ni*ki*float((1-float(P/pi))))
 
 def get_optimum_cbs_utility(ki_array, ni_array, optimum_pi_array, p):
 	"""
@@ -85,6 +85,7 @@ def get_prices_nums_max_cpe_utility(p, ki_array, k2price_threshold, cpe2ue):
 	# for each of the CPE, we will check the CPE utility at the threshold prices of the respective ki values
 	# threshold price for which utility maximizes is the resultant pi for that CPE
 	for i in range(len(ki_array)):
+		# print ('for CPI '+str(i))
 		k = ki_array[i] # k for this CPE
 		n_ui = cpe2ue[i+1] # number of UIs available for this CPE
 		price_thresholds = (k2price_threshold[k])[0:n_ui] # we need to test for each of these thresholds
@@ -94,29 +95,40 @@ def get_prices_nums_max_cpe_utility(p, ki_array, k2price_threshold, cpe2ue):
 		n_at_max_CPE_utility = None
 
 		for j in range(len(price_thresholds)):
-			this_price = price_thresholds[i]
+			this_price = price_thresholds[j] # was i earlier!!! :/
 			update = 0
 			this_utility = get_optimum_cpe_utility(k, this_price, n_ui - j, p)
+			# print ('utility for '+str(this_price)+' = '+str(this_utility))
+			# print ('max_CPE_utility = '+str(max_CPE_utility))
 			if (max_CPE_utility == None):
+				# print ("max_CPE_utlity NONE")
 				update = 1
-			elif (max_CPE_utility < this_utility):
-				update = 1
-			if (update == 1):
+			else:
+				if (max_CPE_utility < this_utility):
+					# print ('max_CPE_utility < this_utility')
+					update = 1
+			if (update != 0):
+				# print ('updating max variables')
 				max_CPE_utility = this_utility
 				n_at_max_CPE_utility = n_ui-j
-				optimum_price = this_price
+				optimum_price = this_price			
 
 		Ri = n_at_max_CPE_utility*k/optimum_price
 
 		#DOUBT-- will it operate under a loss?! ==> NO <PSK>, since if so, CBS can give infinitely high price!!
 		# requirement.append(Ri)
 
+		# print (max_CPE_utility)
+
 		if(max_CPE_utility < 0):
 			requirement.append(0)
+			# print ('requirement = '+str(0))
 		else:
 			requirement.append(Ri)
+			# print ('requirement = '+str(Ri))
 				
 		optimum_prices.append(optimum_price)
+		# print ('optimum_price'+str(optimum_price))
 
 	ans = []
 	ans.append(optimum_prices)
@@ -153,15 +165,15 @@ cpe_price_high = 10
 cbs_price_low = 0.01
 cbs_price_high = 100
 
-Rmax = 240 # Mbps
+Rmax =240 # Mbps
 
 ki_array = [4, 4, 4, 4]
 
 # carry out PSO for CBS price optimization; for evaluating resulting prices and requirements of each CPE, use func get_prices_nums_max_cpe_utility
 
-max_iter = 50000
+max_iter = 30000
 w = 0.01
-c1 = 0.5 # exploratory
+c1 = 0.7 # exploratory
 c2 = 1.5 # global --> converging
 speed_const = 0.1
 
@@ -238,34 +250,37 @@ for j in range(max_iter):
 		if (values_x[i] < lower_limit):
 			values_x[i] = lower_limit
 
-# for value_x in values_x:
-# 	# positions of all the particles at the end of the PSO
-# 	print value_x
-
-print (values_x)
-
-print (get_cbs_utility(values_x, Rmax, ki_array, k2price_threshold, cpe2ue)) # utility of all the particles
-
+for value_x in values_x:
+	# positions of all the particles at the end of the PSO
+	print value_x
+print ('.........')
+# print (k2price_threshold)
+# print (values_x[0])
+print ('utility of the converged point')
+print (get_cbs_utility([values_x[0]], Rmax, ki_array, k2price_threshold, cpe2ue)) # utility of all the particles
+print ('[[<optimum prices for each CPE>],[<total data required for each CPE>]]')
+print (get_prices_nums_max_cpe_utility(values_x[0], ki_array, k2price_threshold, cpe2ue))
 
 
 """
 NOT CONVERGING?? <not anymore :) >
 plot price range on the x axis and utility on the y axis ==> Constant curve @ 0 across all prices!!
+
+start = 0.01
+end = 100
+x = start
+y_arr = []
+x_arr = []
+
+while (x<=end):
+	x_arr.append(x)
+	x+=0.01
+
+y_arr = get_cbs_utility(x_arr, Rmax, ki_array, k2price_threshold, cpe2ue)
+
+plt.plot(x_arr, y_arr)
+while True:
+    plt.pause(0.05)
+
+print (k2price_threshold[4])
 """
-# start = 0.01
-# end = 100
-# x = start
-# y_arr = []
-# x_arr = []
-
-# while (x<=end):
-# 	x_arr.append(x)
-# 	x+=0.01
-
-# y_arr = get_cbs_utility(x_arr, Rmax, ki_array, k2price_threshold, cpe2ue)
-
-# plt.plot(x_arr, y_arr)
-# while True:
-#     plt.pause(0.05)
-
-# print (k2price_threshold[4])
